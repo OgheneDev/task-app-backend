@@ -131,8 +131,8 @@ const sendTaskReminders = async () => {
       await processRecurringTasks();
     });
     
-    // Check for due tasks every 30 minutes
-    cron.schedule('*/30 * * * *', async () => {
+    // Check for due tasks every 1 minute
+    cron.schedule('*/1 * * * *', async () => {
       console.log('Checking for tasks due soon...');
       await sendTaskReminders();
     });

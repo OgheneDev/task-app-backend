@@ -200,3 +200,118 @@ export const resetPassword = async (req, res, next) => {
     }
 };
 
+// @desc   Update password
+// @route  PUT /api/auth/updatepassword
+// @access Private
+export const updatePassword = async (req, res, next) => {
+    try {
+        // 1. Get user from database with password field
+        const user = await User.findById(req.user.id).select('+password');
+
+        // 2. Check current password
+        const { currentPassword, newPassword } = req.body;
+        
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please provide current and new password'
+            });
+        }
+
+        // Verify current password is correct
+        const isMatch = await user.matchPassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                error: 'Current password is incorrect'
+            });
+        }
+
+        // 3. Update password
+        user.password = newPassword;
+        await user.save();
+
+        // 4. Send new token response
+        sendTokenResponse(user, 200, res);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Update user details
+// @route  PUT /api/auth/updatedetails
+// @access Private
+export const updateDetails = async (req, res, next) => {
+    try {
+        // Get fields to update - only allow username and bio
+        const fieldsToUpdate = {};
+        if (req.body.username) fieldsToUpdate.username = req.body.username;
+        if (req.body.bio) fieldsToUpdate.bio = req.body.bio;
+
+        // Check if any fields were provided
+        if (Object.keys(fieldsToUpdate).length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please provide at least one field to update'
+            });
+        }
+
+        // Find and update user
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            fieldsToUpdate,
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc   Delete user account
+// @route  DELETE /api/auth/deleteaccount
+// @access Private
+export const deleteAccount = async (req, res, next) => {
+    try {
+        // 1. Verify the user's password before deletion
+        const { password } = req.body;
+        
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please provide your password to confirm deletion'
+            });
+        }
+
+        // 2. Get user with password field
+        const user = await User.findById(req.user.id).select('+password');
+        
+        // 3. Check if password matches
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                error: 'Password is incorrect'
+            });
+        }
+
+        // 4. Delete the user
+        await User.findByIdAndDelete(req.user.id);
+
+        // 5. Send response
+        res.status(200).json({
+            success: true,
+            message: 'User account successfully deleted'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
