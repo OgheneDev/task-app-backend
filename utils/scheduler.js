@@ -9,14 +9,15 @@ const sendTaskReminders = async () => {
     fiveMinutesFromNow.setMinutes(now.getMinutes() + 5);
     
     try {
-      // Find tasks due in 5 minutes
+      // Find tasks due in exactly 5 minutes (with 1-minute window) and no reminder sent
       const tasks = await Task.find({
         dueDate: now.toDateString(),
         dueTime: {
-          $gte: now.toTimeString(),
-          $lt: fiveMinutesFromNow.toTimeString()
+          $gte: new Date(now.getTime() + 4.5 * 60000).toTimeString(),
+          $lt: new Date(now.getTime() + 5.5 * 60000).toTimeString()
         },
-        status: { $ne: 'done' }
+        status: { $ne: 'done' },
+        reminderSent: { $ne: true }
       }).populate('user');
       
       console.log(`Sending reminders for ${tasks.length} tasks due in 5 minutes`);
@@ -24,6 +25,8 @@ const sendTaskReminders = async () => {
       for (const task of tasks) {
         if (task.user?.preferences?.emailNotifications) {
           await sendTaskReminder(task.user, task);
+          // Mark reminder as sent
+          await Task.findByIdAndUpdate(task._id, { reminderSent: true });
         }
       }
     } catch (err) {

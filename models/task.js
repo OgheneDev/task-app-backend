@@ -31,6 +31,10 @@ const TaskSchema = new mongoose.Schema({
   dueTime: {
     type: String
   },
+  reminderSent: {
+    type: Boolean,
+    default: false
+  },
   tags: [{
     type: String
   }],
