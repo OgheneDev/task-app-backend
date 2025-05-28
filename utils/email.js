@@ -57,7 +57,7 @@ export const sendTaskReminder = async (user, task) => {
 export const sendEmail = async (options) => {
     try {
         const mailOptions = {
-            from: `Task Manager <${process.env.EMAIL_USER}>`,
+            from: `Task Master <${process.env.EMAIL_USER}>`,
             to: options.email,
             subject: options.subject,
             html: options.html
